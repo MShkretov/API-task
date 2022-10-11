@@ -70,8 +70,33 @@ class ConstructionStages
 
     public function patchConstructionStages(ConstructionStagesPatch $data)
     {
+        $fields = array(
+            "name" => $data->name,
+            "start_date" => $data->startDate,
+            "end_date" => $data->endDate,
+            "duration" => $data->duration,
+            "durationUnit" => $data->durationUnit,
+            "color" => $data->color,
+            "externalId" => $data->externalId,
+            "status" => $data->status
+        );
 
+        $fieldsToSet = [];
+        foreach ($fields as $key => $value){
+            if($value != null)
+                $fieldsToSet[] = $key . " = '$value'";
+        }
+
+        $query = "UPDATE construction_stages SET ". implode(", ",$fieldsToSet) . " WHERE ID = $data->id";
+
+        $this->db->exec($query);
+
+        return $this->getSingle($data->id)[0];
     }
 
-
+    public function delete($id)
+    {
+        $this->db->exec("UPDATE construction_stages SET status = 'DELETED' WHERE id = $id");
+        return ['deleted' => $this->getSingle($id)[0]];
+    }
 }

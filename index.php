@@ -42,6 +42,10 @@ class Api
                 'method' => 'patchConstructionStages',
                 'bodyType' => 'ConstructionStagesPatch'
             ],
+            'delete constructionStages' => [
+                'class' => 'ConstructionStages',
+                'method' => 'delete',
+            ],
 		];
 
 		$response = [
