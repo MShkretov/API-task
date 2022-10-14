@@ -44,7 +44,7 @@ class Api
             ],
             'delete constructionStages' => [
                 'class' => 'ConstructionStages',
-                'method' => 'delete',
+                'method' => 'deleteConstructionStage',
             ],
 		];
 
