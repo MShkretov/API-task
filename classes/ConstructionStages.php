@@ -40,6 +40,7 @@ class ConstructionStages
         return true;
     }
 
+    //Fetch CS array of objects
     public function getAll()
     {
         $stmt = $this->db->prepare("
@@ -59,6 +60,7 @@ class ConstructionStages
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    //Fetch CS single object
     public function getSingle($id)
     {
         if(!$id)
@@ -82,6 +84,7 @@ class ConstructionStages
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    //Create CS and return inserted object
     public function post(ConstructionStagesCreate $data)
     {
         if(!$this->validateData($data))
@@ -107,6 +110,7 @@ class ConstructionStages
         return $this->getSingle($this->db->lastInsertId());
     }
 
+    //Update CS fields passed by User
     public function patchConstructionStages(ConstructionStagesPatch $data)
     {
         if(!$data->id)
@@ -141,6 +145,12 @@ class ConstructionStages
         return $this->getSingle($data->id)[0];
     }
 
+    //Set status = 'DELETED' on CS
+    public function deleteConstructionStage($id){
+        $this->db->exec("UPDATE construction_stages SET status = 'DELETED' WHERE id = $id");
+        return ['deleted' => ['id' => $id]];
+    }
+
     private function generateDuration($data){
         if(!$data->endDate || !$data->startDate)
             return null;
@@ -155,11 +165,6 @@ class ConstructionStages
             return $interval->days;
         if($data->durationUnit == "WEEKS")
             return $interval->days/7;
-    }
-
-    public function deleteConstructionStage($id){
-        $this->db->exec("UPDATE construction_stages SET status = 'DELETED' WHERE id = $id");
-        return ['deleted' => ['id' => $id]];
     }
 
     private function checkValidIso8601($field){
