@@ -42,7 +42,7 @@ class Api
                 'method' => 'patchConstructionStages',
                 'bodyType' => 'ConstructionStagesPatch'
             ],
-            'delete constructionStages' => [
+            'delete constructionStages/(:num)' => [
                 'class' => 'ConstructionStages',
                 'method' => 'deleteConstructionStage',
             ],

@@ -6,7 +6,6 @@ class ConstructionStagesPatch
     public $name;
     public $startDate;
     public $endDate;
-    public $duration;
     public $durationUnit;
     public $color;
     public $externalId;
