@@ -37,7 +37,7 @@ class Api
 				'method' => 'post',
 				'bodyType' => 'ConstructionStagesCreate'
 			],
-            'patch constructionStages' => [
+            'patch constructionStages/update' => [
                 'class' => 'ConstructionStages',
                 'method' => 'patchConstructionStages',
                 'bodyType' => 'ConstructionStagesPatch'
