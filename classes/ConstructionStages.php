@@ -11,12 +11,14 @@ class ConstructionStages
     }
 
     //make validation for data and return error message
-    public function validateData(&$data){
-        if($data->name && strlen($data->name) > 255){
+    public function validateData($data, $method = "POST"){
+
+        //in POST we need name but in PATCH we don't need it
+        if($method == "PATCH" && ($data->name && strlen($data->name) > 255) || $method == "POST" && (!$data->name || ($data->name && strlen($data->name) > 255))){
             $this->errorMsg = ["error" => ["code" => 400 ,"message" => "name should be maximum 255 chars"]];
             return false;}
 
-        if(!$data->startDate || ($data->startDate && !$this->checkValidIso8601($data->startDate))){
+        if($method == "PATCH" && ($data->startDate && !$this->checkValidIso8601($data->startDate)) || $method == "POST" && (!$data->startDate || ($data->startDate && !$this->checkValidIso8601($data->startDate)))){
             $this->errorMsg = ["error" => ["code" => 400 ,"message" => "startDate not exists or not match iso8601 format"]];
             return false;}
 
@@ -115,36 +117,29 @@ class ConstructionStages
     }
 
     //Update CS fields passed by User
-    public function patchConstructionStages(ConstructionStagesPatch $data)
+    public function patchConstructionStages($data)
     {
         if(!$data->id)
             return ["error" => ["code" => 400  ,"message" => "id is missing"]];
 
-        if(!$this->validateData($data))
+        if(!$this->validateData($data, "PATCH"))
             return $this->errorMsg;
 
         $data->duration = $this->generateDuration($data);
 
-        $fields = array(
-            "name" => $data->name,
-            "start_date" => $data->startDate,
-            "end_date" => $data->endDate,
-            "duration" => $data->duration,
-            "durationUnit" => $data->durationUnit,
-            "color" => $data->color,
-            "externalId" => $data->externalId,
-            "status" => $data->status
-        );
+        //remove duration if null, that means we don't have to update duration
+        if($data->duration == null){
+            unset($data->duration);
+        }
+
+        $fields = $this->mapping($data);
 
         //skip fields which value is not set
         $dbFields = [];
         $fieldsToSet = [];
         foreach ($fields as $key => $value){
-            if($value != null)
-            {
-                $fieldsToSet[] = $value;
+                $fieldsToSet[] = $value ? : NULL;
                 $dbFields[] = $key."=?";
-            }
         }
 
         $query = "UPDATE construction_stages SET ". implode(", ",$dbFields) . " WHERE ID = $data->id";
@@ -152,6 +147,20 @@ class ConstructionStages
         $this->db->prepare($query)->execute($fieldsToSet);
 
         return $this->getSingle($data->id)[0];
+    }
+
+    //map only date columns because they are different from db names
+    private function mapping($data){
+        if($data->startDate){
+            $data->start_date = $data->startDate;
+            unset($data->startDate);
+        }
+        if($data->endDate) {
+            $data->end_date = $data->endDate;
+            unset($data->endDate);
+        }
+
+        return $data;
     }
 
     //Set status = 'DELETED' on CS

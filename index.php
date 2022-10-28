@@ -39,8 +39,7 @@ class Api
 			],
             'patch constructionStages/update' => [
                 'class' => 'ConstructionStages',
-                'method' => 'patchConstructionStages',
-                'bodyType' => 'ConstructionStagesPatch'
+                'method' => 'patchConstructionStages'
             ],
             'delete constructionStages/(:num)' => [
                 'class' => 'ConstructionStages',
@@ -65,7 +64,7 @@ class Api
 					}
                     if ($httpVerb === 'patch') {
                         $data = json_decode(file_get_contents('php://input'));
-                        $params = [new $target['bodyType']($data)];
+                        $params = array($data);
                     }
 					$params = array_merge($params, $matches);
 					$response = call_user_func_array([new $target['class'], $target['method']], $params);
