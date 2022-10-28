@@ -10,13 +10,14 @@ class ConstructionStages
         $this->db = Api::getDb();
     }
 
+    //make validation for data and return error message
     public function validateData(&$data){
         if($data->name && strlen($data->name) > 255){
             $this->errorMsg = ["error" => ["code" => 400 ,"message" => "name should be maximum 255 chars"]];
             return false;}
 
-        if($data->startDate && !$this->checkValidIso8601($data->startDate)){
-            $this->errorMsg = ["error" => ["code" => 400 ,"message" => "startDate should match iso8601 format"]];
+        if(!$data->startDate || ($data->startDate && !$this->checkValidIso8601($data->startDate))){
+            $this->errorMsg = ["error" => ["code" => 400 ,"message" => "startDate not exists or not match iso8601 format"]];
             return false;}
 
         if($data->endDate && (!$data->startDate || !$this->checkValidIso8601($data->endDate) ||  $data->startDate > $data->endDate)){
@@ -34,8 +35,11 @@ class ConstructionStages
             $this->errorMsg = ["error" => ["code" => 400 ,"message" => "externalId should be maximum 255 chars"]];
             return false;}
 
-        if($data->status && !in_array($data->status, ["NEW","PLANNED","DELETED"]))
-            $data->status = "NEW";
+        if($data->status && !in_array($data->status, ["NEW","PLANNED","DELETED"])) {
+            $this->errorMsg = ["error" => ["code" => 400, "message" => "status should be NEW, PLANNED or DELETED"]];
+            return false;
+        }
+
 
         return true;
     }
@@ -132,25 +136,35 @@ class ConstructionStages
             "status" => $data->status
         );
 
+        //skip fields which value is not set
+        $dbFields = [];
         $fieldsToSet = [];
         foreach ($fields as $key => $value){
             if($value != null)
-                $fieldsToSet[] = $key . " = '$value'";
+            {
+                $fieldsToSet[] = $value;
+                $dbFields[] = $key."=?";
+            }
         }
 
-        $query = "UPDATE construction_stages SET ". implode(", ",$fieldsToSet) . " WHERE ID = $data->id";
+        $query = "UPDATE construction_stages SET ". implode(", ",$dbFields) . " WHERE ID = $data->id";
 
-        $this->db->exec($query);
+        $this->db->prepare($query)->execute($fieldsToSet);
 
         return $this->getSingle($data->id)[0];
     }
 
     //Set status = 'DELETED' on CS
     public function deleteConstructionStage($id){
-        $this->db->exec("UPDATE construction_stages SET status = 'DELETED' WHERE id = $id");
+        $query = "UPDATE construction_stages SET status = 'DELETED' WHERE id = ?";
+        $this->db->prepare($query)->execute([$id]);
         return ['deleted' => ['id' => $id]];
     }
 
+    //Set duration based on durationUnit.
+    //If durationUnit is HOURS calculate duration in hours
+    //If durationUnit is DAYS calculate duration in days
+    //If durationUnit is WEEKS calculate duration in weeks (float)
     private function generateDuration($data){
         if(!$data->endDate || !$data->startDate)
             return null;
@@ -167,6 +181,7 @@ class ConstructionStages
             return $interval->days/7;
     }
 
+    //Check if date is valid iso8601
     private function checkValidIso8601($field){
         if (preg_match('/^[12]\d{3}(?:-\d{2}){2}T(?:(?:[01]\d)|(?:2[0-3]))(?::[0-5][0-9]){2}Z$/', $field)) {
             $date = explode('T', $field)[0];
